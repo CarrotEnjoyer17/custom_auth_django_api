@@ -1,0 +1,15 @@
+[project]
+name = "effective-mobile-test-task"
+version = "0.1.0"
+description = "Completing test task for junior"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django",
+    "djangorestframework",
+    "psycopg[binary]",
+    "pyjwt",
+    "bcrypt",
+    "python-dotenv",
+    "drf-spectacular",
+]
