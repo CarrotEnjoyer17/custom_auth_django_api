@@ -48,7 +48,6 @@ class JWTAuthentificationMiddleware:
         if session is None:
             return self.get_response(request)
         
-        request.user = session.user
+        request.jwt_user = session.user
         request.auth_session = session
-
         return self.get_response(request)

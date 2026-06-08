@@ -1,5 +1,3 @@
-from django.shortcuts import render
-
 import bcrypt
 from django.utils import timezone
 from rest_framework import status
@@ -100,18 +98,19 @@ class LoginView(APIView):
 
 class AuthMeView(APIView):
     def get(self, request):
-        if not request.user or not getattr(request.user, "is_active", False):
+        user = getattr(request, "jwt_user", None)
+        if not user or not getattr(user, "is_active", False):
             return Response(
                 {"detail": "Authentification credentials were not provided"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
         return Response(
                 {
-                    "id": request.user.id,
-                    "email": request.user.email,
-                    "first_name": request.user.first_name,
-                    "last_name": request.user.last_name,
-                    "middle_name": request.user.middle_name,
+                    "id": user.id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "middle_name": user.middle_name,
                 },
                 status=status.HTTP_200_OK
             )
@@ -119,15 +118,16 @@ class AuthMeView(APIView):
 
 class LogoutView(APIView):
     def post(self, request):
-        if request.auth_session is None:
+        auth_session = getattr(request, "auth_session", None)
+        if auth_session is None:
             return Response(
                 {"detail": "Authentication credentials were not provided"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         
-        request.auth_session.is_active = False
-        request.auth_session.revoked_at = timezone.now()
-        request.auth_session.save(
+        auth_session.is_active = False
+        auth_session.revoked_at = timezone.now()
+        auth_session.save(
             update_fields=["is_active", "revoked_at"]
         )
 
