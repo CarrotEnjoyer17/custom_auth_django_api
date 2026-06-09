@@ -42,12 +42,12 @@ class RegisterSerializer(serializers.Serializer):
 
         default_role = Role.objects.filter(code="user").first()
 
-        if default_role is None:
-            User.objects.create(
+        if default_role is not None:
+            UserRole.objects.create(
                 user=user,
                 role=default_role,
             )
-        
+    
         return user
 
 

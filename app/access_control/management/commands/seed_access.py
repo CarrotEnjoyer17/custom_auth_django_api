@@ -37,7 +37,7 @@ class Command(BaseCommand):
         admin_role = Role.objects.get(code="admin")
 
         for element in BusinessElement.objects.all():
-            AccessRoleRule.objects.get_or_create(
+            AccessRoleRule.objects.update_or_create(
                 role=admin_role,
                 element=element,
                 defaults={
@@ -50,6 +50,58 @@ class Command(BaseCommand):
                     "delete_all_permission": True,
                 },
             )
+        
+        user_role = Role.objects.get(code="user")
+        manager_role = Role.objects.get(code="manager")
+        guest_role = Role.objects.get(code="guest")
+
+        business_elements = BusinessElement.objects.filter(
+            code__in=["products", "orders", "shops"]
+        )
+
+        for element in business_elements:
+            AccessRoleRule.objects.update_or_create(
+                role=user_role,
+                element=element,
+                defaults={
+                    "read_permission": True,
+                    "read_all_permission": False,
+                    "create_permission": True,
+                    "update_permission": True,
+                    "update_all_permission": False,
+                    "delete_permission": False,
+                    "delete_all_permission": False,
+                },
+            )
+
+            AccessRoleRule.objects.update_or_create(
+                role=manager_role,
+                element=element,
+                defaults={
+                    "read_permission": True,
+                    "read_all_permission": True,
+                    "create_permission": True,
+                    "update_permission": True,
+                    "update_all_permission": True,
+                    "delete_permission": True,
+                    "delete_all_permission": False,
+                },
+            )
+
+            AccessRoleRule.objects.update_or_create(
+                role=guest_role,
+                element=element,
+                defaults={
+                    "read_permission": True,
+                    "read_all_permission": False,
+                    "create_permission": False,
+                    "update_permission": False,
+                    "update_all_permission": False,
+                    "delete_permission": False,
+                    "delete_all_permission": False,
+                },
+            )
+
         self.stdout.write(
             self.style.SUCCESS("Access control seed data created successfully")
         )
