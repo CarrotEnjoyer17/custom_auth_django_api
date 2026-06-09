@@ -1,7 +1,7 @@
 [project]
 name = "effective-mobile-test-task"
-version = "0.1.0"
-description = "Completing test task for junior"
+version = "1.0.0"
+description = "Completing test task for junior python dev"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
