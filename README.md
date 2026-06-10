@@ -1,126 +1,125 @@
-# Effective Mobile Test Task
+# Backend Authentication and Authorization API
 
-Backend-приложение на Django REST Framework с кастомной системой аутентификации и авторизации.
+A backend application built with Django REST Framework, featuring a custom authentication and authorization system.
 
-Проект реализует:
+The project implements:
 
-* регистрацию пользователя;
-* вход и выход из системы;
-* JWT-аутентификацию;
-* хранение активных сессий;
-* получение и обновление профиля;
-* мягкое удаление пользователя;
-* ролевую модель доступа;
-* проверку прав на mock business resources;
-* API для администратора для просмотра и изменения правил доступа.
+* user registration;
+* login and logout;
+* JWT authentication;
+* active session storage;
+* profile retrieval and update;
+* soft user deletion;
+* role-based access control;
+* permission checks for mock business resources;
+* an admin API for viewing and modifying access rules.
 
-## Стек
+## Stack
 
 * Python
 * Django
 * Django REST Framework
 * PyJWT
 * bcrypt
-* SQLite для локальной разработки
-* Docker для контейнерезированного запуска
+* SQLite for local development
+* Docker for containerized startup
 
-## Структура проекта
+## Project Structure
 
 ```text
 app/
-├── access_control/     # роли, бизнес-элементы, правила доступа
-├── auth_system/        # регистрация, логин, логаут, JWT middleware, sessions
+├── access_control/     # roles, business elements, access rules
+├── auth_system/        # registration, login, logout, JWT middleware, sessions
 ├── business/           # mock business API
 ├── config/             # Django settings / urls
-├── users/              # модель пользователя и user profile API
+├── users/              # user model and user profile API
 └── manage.py
 ```
 
-## Установка и запуск
+## Installation and Running
 
-Клонировать проект:
+Clone the project:
 
 ```bash
 git clone <repository-url>
 cd <project-folder>
 ```
 
-Установить зависимости:
+Install dependencies:
 
 ```bash
 uv sync
 ```
 
-Применить миграции:
+Apply migrations:
 
 ```bash
 uv run python app/manage.py migrate
 ```
 
-Создать роли, бизнес-элементы и правила доступа:
+Create roles, business elements, and access rules:
 
 ```bash
 uv run python app/manage.py seed_access
 ```
 
-Запустить сервер:
+Run the server:
 
 ```bash
 uv run python app/manage.py runserver
 ```
 
-Сервер будет доступен по адресу:
+The server will be available at:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
+## Running with Docker
 
-## Запуск через Docker
+The project can be run in a Docker container. In the current version, Docker is used only to run the application, while the database remains SQLite.
 
-Проект можно запустить в Docker-контейнере. В текущей версии Docker используется только для запуска приложения, база данных остается SQLite.
-
-### Сборка и запуск контейнера
+### Building and Starting the Container
 
 ```bash
 docker compose up --build
 ```
 
-После запуска приложение будет доступно по адресу:
+After startup, the application will be available at:
 
 ```text
 http://127.0.0.1:8000/
 ```
 
-### Применение миграций
+### Applying Migrations
 
-В отдельном терминале выполнить:
+Run the following command in a separate terminal:
 
 ```bash
 docker compose exec web uv run python app/manage.py migrate
 ```
 
-### Заполнение тестовых данных
+### Seeding Initial Data
 
 ```bash
 docker compose exec web uv run python app/manage.py seed_access
 ```
 
-### Остановка контейнера
+### Stopping the Container
 
 ```bash
 docker compose down
 ```
 
-### Проверка состояния контейнеров
+### Checking Container Status
 
 ```bash
 docker compose ps
 ```
 
-## Docker-файлы
+## Docker Files
 
-В проекте добавлены:
+The project includes the following files:
 
 ```text
 Dockerfile
@@ -128,61 +127,60 @@ docker-compose.yml
 .dockerignore
 ```
 
-`Dockerfile` описывает окружение приложения:
+`Dockerfile` describes the application environment:
 
-* используется образ `python:3.12-slim`;
-* устанавливается `uv`;
-* зависимости устанавливаются из `pyproject.toml` и `uv.lock`;
-* проект копируется внутрь контейнера;
-* Django запускается командой `runserver 0.0.0.0:8000`.
+* uses the `python:3.12-slim` image;
+* installs `uv`;
+* installs dependencies from `pyproject.toml` and `uv.lock`;
+* copies the project into the container;
+* starts Django with the `runserver 0.0.0.0:8000` command.
 
-`docker-compose.yml` описывает запуск контейнера:
+`docker-compose.yml` describes the container startup:
 
-* сервис `web`;
-* проброс порта `8000:8000`;
-* подключение текущей папки проекта как volume;
-* запуск приложения внутри контейнера.
+* `web` service;
+* port mapping `8000:8000`;
+* mounting the current project directory as a volume;
+* running the application inside the container.
 
-SQLite используется как локальная база данных для упрощения проверки тестового задания. При необходимости проект можно перевести на PostgreSQL, изменив настройки `DATABASES` в Django settings.
+SQLite is used as a local database to simplify project setup. If needed, the project can be migrated to PostgreSQL by changing the `DATABASES` configuration in Django settings.
 
+## Authentication
 
-## Аутентификация
+The project uses custom JWT authentication.
 
-В проекте используется кастомная JWT-аутентификация.
+After a successful login, the server creates a `Session` record in the database and returns a JWT access token.
 
-После успешного логина сервер создает запись `Session` в базе данных и возвращает JWT access token.
-
-JWT содержит:
+The JWT contains:
 
 * `user_id`;
 * `session_id`;
 * `jti`;
 * `exp`.
 
-Токен передается в заголовке:
+The token is passed in the header:
 
 ```text
 Authorization: Bearer <access_token>
 ```
 
-Каждый запрос проходит через custom middleware. Middleware:
+Each request goes through custom middleware. The middleware:
 
-1. достает токен из `Authorization`;
-2. декодирует и проверяет JWT;
-3. проверяет активную сесию в базе;
-4. проверяет, что пользователь активен;
-5. записывает пользователя в `request.jwt_user`;
-6. записывает текущую сессию в `request.auth_session`.
+1. extracts the token from the `Authorization` header;
+2. decodes and validates the JWT;
+3. checks the active session in the database;
+4. checks that the user is active;
+5. writes the user to `request.jwt_user`;
+6. writes the current session to `request.auth_session`.
 
-Если пользователь не найден или токен невалиден, endpoint сам возвращает `401 Unauthorized`, если для него требуется авторизация.
+If the user is not found or the token is invalid, the endpoint itself returns `401 Unauthorized` if authorization is required.
 
-## Регистрация
+## Registration
 
 ```http
 POST /api/auth/register/
 ```
 
-Пример:
+Example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/auth/register/ \
@@ -197,17 +195,17 @@ curl -X POST http://127.0.0.1:8000/api/auth/register/ \
   }'
 ```
 
-При регистрации пароль хешируется через `bcrypt`.
+During registration, the password is hashed with `bcrypt`.
 
-Новому пользователю автоматически назначается роль `user`, если такая роль есть в базе.
+A new user is automatically assigned the `user` role if this role exists in the database.
 
-## Логин
+## Login
 
 ```http
 POST /api/auth/login/
 ```
 
-Пример:
+Example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/auth/login/ \
@@ -218,7 +216,7 @@ curl -X POST http://127.0.0.1:8000/api/auth/login/ \
   }'
 ```
 
-Ответ:
+Response:
 
 ```json
 {
@@ -227,7 +225,7 @@ curl -X POST http://127.0.0.1:8000/api/auth/login/ \
 }
 ```
 
-Для удобства можно сохранить токен в переменную:
+For convenience, the token can be saved to a variable:
 
 ```bash
 TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/login/ \
@@ -244,22 +242,22 @@ TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/auth/login/ \
 POST /api/auth/logout/
 ```
 
-Пример:
+Example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/auth/logout/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-При logout текущая сессич становится неактивной. Старый JWT больше не сможет использоваться, даже если срок действия токена еще не истек.
+During logout, the current session becomes inactive. The old JWT can no longer be used, even if the token has not expired yet.
 
-## Получение текущего пользователя
+## Getting the Current User
 
 ```http
 GET /api/auth/me/
 ```
 
-Пример:
+Example:
 
 ```bash
 curl http://127.0.0.1:8000/api/auth/me/ \
@@ -268,7 +266,7 @@ curl http://127.0.0.1:8000/api/auth/me/ \
 
 ## User API
 
-### Получить профиль
+### Get Profile
 
 ```http
 GET /api/users/me/
@@ -279,7 +277,7 @@ curl http://127.0.0.1:8000/api/users/me/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Обновить профиль
+### Update Profile
 
 ```http
 PATCH /api/users/me/
@@ -295,7 +293,7 @@ curl -X PATCH http://127.0.0.1:8000/api/users/me/ \
   }'
 ```
 
-### Мягко удалить пользователя
+### Soft Delete User
 
 ```http
 DELETE /api/users/me/
@@ -306,22 +304,22 @@ curl -X DELETE http://127.0.0.1:8000/api/users/me/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-Удаление мягкое:
+Deletion is soft:
 
-* `is_active` становится `False`;
-* заполняется `deleted_at`;
-* текущая сессия становится неактивной;
-* пользователь больше не может войти в систему.
+* `is_active` becomes `False`;
+* `deleted_at` is filled in;
+* the current session becomes inactive;
+* the user can no longer log in.
 
-## Модель доступа
+## Access Model
 
-В проекте реализована ролевая модель доступа.
+The project implements a role-based access control model.
 
-Основные таблицы:
+Main tables:
 
 ### Role
 
-Примеры ролей:
+Example roles:
 
 * `admin`;
 * `manager`;
@@ -330,15 +328,15 @@ curl -X DELETE http://127.0.0.1:8000/api/users/me/ \
 
 ### UserRole
 
-Связка пользователя и роли.
+A link between a user and a role.
 
-Один пользователь может иметь несколько ролей.
+One user can have multiple roles.
 
 ### BusinessElement
 
-Бизнес-ресурс, к которому можно настраивать доступ.
+A business resource for which access can be configured.
 
-Примеры:
+Examples:
 
 * `users`;
 * `products`;
@@ -348,9 +346,9 @@ curl -X DELETE http://127.0.0.1:8000/api/users/me/ \
 
 ### AccessRoleRule
 
-Правило доступа для конкретной роли и конкретного бизнес-элемента.
+An access rule for a specific role and a specific business element.
 
-Поля:
+Fields:
 
 ```text
 read_permission
@@ -362,7 +360,7 @@ delete_permission
 delete_all_permission
 ```
 
-Пример:
+Example:
 
 ```text
 role = user
@@ -372,13 +370,13 @@ read_all_permission = false
 create_permission = true
 ```
 
-Это означает, что пользователь с ролью `user` может читать свои products и создавать products, но не может читать все products.
+This means that a user with the `user` role can read their own products and create products, but cannot read all products.
 
-## Логика прав
+## Permission Logic
 
-В проекте используется функция `has_permission(user, element_code, action)`.
+The project uses the `has_permission(user, element_code, action)` function.
 
-Примеры:
+Examples:
 
 ```python
 has_permission(user, "products", "read")
@@ -387,7 +385,7 @@ has_permission(user, "products", "create")
 has_permission(user, "access_rules", "update")
 ```
 
-Поддерживаемые действия:
+Supported actions:
 
 ```text
 read
@@ -399,43 +397,43 @@ delete
 delete_all
 ```
 
-Обычные permissions, например `read`, `update`, `delete`, используются для доступа к своим объектам.
+Regular permissions, such as `read`, `update`, and `delete`, are used to access the user's own objects.
 
-Permissions с суффиксом `_all`, например `read_all`, `update_all`, `delete_all`, дают доступ ко всем объектам ресурса.
+Permissions with the `_all` suffix, such as `read_all`, `update_all`, and `delete_all`, grant access to all objects of the resource.
 
-В mock business API принадлежность объекта определяется по полю:
+In the mock business API, object ownership is determined by the field:
 
 ```text
 owner_id
 ```
 
-## 401 и 403
+## 401 and 403
 
-В проекте разделена логика ошибок авторизации:
+The project separates authorization error logic:
 
 ### 401 Unauthorized
 
-Возвращается, если пользователь не определен:
+Returned when the user is not identified:
 
-* нет токена;
-* токен невалидный;
-* сессия неактивна;
-* пользователь неактивен.
+* no token;
+* invalid token;
+* inactive session;
+* inactive user.
 
 ### 403 Forbidden
 
-Возвращается, если пользователь определен, но у него нет нужного права.
+Returned when the user is identified but does not have the required permission.
 
-Например:
+For example:
 
-* пользователь залогинен;
-* но у его роли нет `create_permission` для `products`.
+* the user is logged in;
+* but the user's role does not have `create_permission` for `products`.
 
 ## Mock Business API
 
-Бизнес-объекты не хранятся в базе данных. Они представлены mock-списками в коде.
+Business objects are not stored in the database. They are represented by mock lists in the code.
 
-Реализованы endpoints:
+Implemented endpoints:
 
 ```http
 GET  /api/products/
@@ -451,26 +449,26 @@ GET  /api/shops/
 GET /api/products/
 ```
 
-Без токена:
+Without a token:
 
 ```bash
 curl -i http://127.0.0.1:8000/api/products/
 ```
 
-Ожидаемый результа:
+Expected result:
 
 ```text
 401 Unauthorized
 ```
 
-С токеном:
+With a token:
 
 ```bash
 curl -i http://127.0.0.1:8000/api/products/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-Создание товара:
+Creating a product:
 
 ```bash
 curl -i -X POST http://127.0.0.1:8000/api/products/ \
@@ -484,11 +482,11 @@ curl -i -X POST http://127.0.0.1:8000/api/products/ \
 
 ## Admin Access API
 
-Администратор может смотреть роли, бизнес-элементы и правила доступа.
+An administrator can view roles, business elements, and access rules.
 
-Доступ к этим endpoints проверяется через `access_rules`.
+Access to these endpoints is checked through `access_rules`.
 
-### Получить роли
+### Get Roles
 
 ```http
 GET /api/access/roles/
@@ -499,7 +497,7 @@ curl -i http://127.0.0.1:8000/api/access/roles/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Получить бизнес-элементы
+### Get Business Elements
 
 ```http
 GET /api/access/elements/
@@ -510,7 +508,7 @@ curl -i http://127.0.0.1:8000/api/access/elements/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Получить правила доступа
+### Get Access Rules
 
 ```http
 GET /api/access/rules/
@@ -521,13 +519,13 @@ curl -i http://127.0.0.1:8000/api/access/rules/ \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Изменить правило доступа
+### Update an Access Rule
 
 ```http
 PATCH /api/access/rules/<rule_id>/
 ```
 
-Пример:
+Example:
 
 ```bash
 curl -i -X PATCH http://127.0.0.1:8000/api/access/rules/1/ \
@@ -538,11 +536,11 @@ curl -i -X PATCH http://127.0.0.1:8000/api/access/rules/1/ \
   }'
 ```
 
-Изменять можно отдельные поля, так как используется partial update.
+Individual fields can be updated because partial update is used.
 
-## Назначение admin-роли для локального тестирования
+## Assigning the Admin Role for Local Testing
 
-Для локального тестирования можно назначить пользователю роль `admin` через shell:
+For local testing, the `admin` role can be assigned to a user through the shell:
 
 ```bash
 uv run python app/manage.py shell
@@ -558,71 +556,71 @@ admin_role = Role.objects.get(code="admin")
 UserRole.objects.get_or_create(user=user, role=admin_role)
 ```
 
-После этого нужно выйти из shell:
+After that, exit the shell:
 
 ```python
 exit()
 ```
 
-И снова получить токен через login.
+Then get a new token through login.
 
-В проекте есть отдельная dev-команда для назначения admin-роли одному из дефолтных пользователей, ее можно запустить так:
+The project includes a separate development command for assigning the `admin` role to one of the default users:
 
 ```bash
 uv run python app/manage.py seed_add__admin
 ```
 
-Эта команда нужна только для локального тестирования.
+This command is only needed for local testing.
 
-## Seed data
+## Seed Data
 
-Команда:
+The command:
 
 ```bash
 uv run python app/manage.py seed_access
 ```
 
-создает:
+creates:
 
-* роли;
-* бизнес-элементы;
-* права администратора на все бизнес-элементы;
-* права `user`, `manager`, `guest` на `products`, `orders`, `shops`.
+* roles;
+* business elements;
+* administrator permissions for all business elements;
+* `user`, `manager`, and `guest` permissions for `products`, `orders`, and `shops`.
 
-Права по умолчанию:
+Default permissions:
 
 ### admin
 
-Полный доступ ко всем элементам.
+Full access to all elements.
 
 ### manager
 
-Для `products`, `orders`, `shops`:
+For `products`, `orders`, and `shops`:
 
-* может читать все;
-* может создавать;
-* может обновлять все;
-* может удалять свои объекты.
+* can read all objects;
+* can create objects;
+* can update all objects;
+* can delete their own objects.
 
 ### user
 
-Для `products`, `orders`, `shops`:
+For `products`, `orders`, and `shops`:
 
-* может читать свои объекты;
-* может создавать;
-* может обновлять свои объекты;
-* не может удалять.
+* can read their own objects;
+* can create objects;
+* can update their own objects;
+* cannot delete objects.
 
 ### guest
 
-Для `products`, `orders`, `shops`:
+For `products`, `orders`, and `shops`:
 
-* может читать свои объекты;
-* не может создавать;
-* не может обновлять;
-* не может удалять.
+* can read their own objects;
+* cannot create objects;
+* cannot update objects;
+* cannot delete objects.
 
-## Основные endpoint'ы
+## Main Endpoints
 
 ```text
 POST   /api/auth/register/
@@ -645,31 +643,30 @@ GET    /api/access/rules/
 PATCH  /api/access/rules/<rule_id>/
 ```
 
-## Проверка сценария
+## Scenario Check
 
-Пример полного сценария:
+Example full scenario:
 
-1. Запустить миграции.
-2. Выполнить `seed_access`.
-3. Зарегистрировать пользователя.
-4. Залогиниться и получить token.
-5. Проверить `/api/auth/me/`.
-6. Проверить `/api/users/me/`.
-7. Проверить `/api/products/`.
-8. Назначить пользователю роль `admin`.
-9. Получить новый token.
-10. Проверить `/api/access/rules/`.
-11. Изменить одно правило через `PATCH`.
-12. Выполнить logout.
-13. Проверить, что старый token больше не работает.
+1. Run migrations.
+2. Run `seed_access`.
+3. Register a user.
+4. Log in and get a token.
+5. Check `/api/auth/me/`.
+6. Check `/api/users/me/`.
+7. Check `/api/products/`.
+8. Assign the `admin` role to the user.
+9. Get a new token.
+10. Check `/api/access/rules/`.
+11. Update one rule through `PATCH`.
+12. Run logout.
+13. Check that the old token no longer works.
 
-## Особенности реализации
+## Implementation Details
 
-* Пароли не хранятся в открытом виде, используется `bcrypt`.
-* JWT используется только для идентификации сессии и пользователя.
-* Наличие JWT само по себе не дает доступ: middleware дополнительно проверяет активную сессию в базе.
-* Logout инвалидирует текущую сессию.
-* Удаление пользователя мягкое.
-* Бизнес-объекты сделаны mock-данными, так как основная цель проекта — показать работу authentication и authorization.
-* Права доступа вынесены в отдельные таблицы и могут изменяться через admin API.
-
+* Passwords are not stored in plain text; `bcrypt` is used.
+* JWT is used only to identify the session and the user.
+* Having a JWT alone does not grant access: the middleware additionally checks the active session in the database.
+* Logout invalidates the current session.
+* User deletion is soft.
+* Business objects are implemented as mock data, because the main purpose of the project is to demonstrate authentication and authorization.
+* Access permissions are stored in separate tables and can be modified through the admin API.
